@@ -119,6 +119,8 @@ resource "aws_api_gateway_integration" "integration" {
 
 # CloudFront Distribution
 resource "aws_cloudfront_distribution" "my_distribution" {
+  enabled = true
+
   origin {
     domain_name = aws_s3_bucket.my_bucket.bucket_regional_domain_name
     origin_id   = "S3-myBucket"
@@ -142,6 +144,12 @@ resource "aws_cloudfront_distribution" "my_distribution" {
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "POST"]
     cached_methods         = ["GET", "HEAD"]
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
   }
 
   viewer_certificate {
