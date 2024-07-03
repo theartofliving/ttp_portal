@@ -9,7 +9,7 @@ service = 'es'
 credentials = boto3.Session().get_credentials()
 auth = AWS4Auth(credentials.access_key, credentials.secret_key, region, service, session_token=credentials.token)
 
-host = 'search-my-opensearch-domain-xxxxxxxxxx.us-east-1.es.amazonaws.com'  # OpenSearch domain endpoint
+host = 'https://vpc-ttpportal-lrysnolxf3dtvnwgchv3xln2py.ap-south-1.es.amazonaws.com'  # OpenSearch domain endpoint
 index = 'my-index'
 type = '_doc'
 

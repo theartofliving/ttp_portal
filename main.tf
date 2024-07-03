@@ -2,6 +2,10 @@ provider "aws" {
   region = "ap-south-1"
 }
 
+variable "aws_region" {
+  default = "ap-south-1"
+}
+
 # S3 Bucket
 resource "aws_s3_bucket" "my_bucket" {
   bucket = "my-static-files-bucket"
@@ -65,8 +69,8 @@ resource "aws_iam_role_policy_attachment" "lambda_policy_attach" {
 # Lambda Function
 resource "aws_lambda_function" "my_lambda" {
   function_name = "my_lambda_function"
-  filename      = "lambda_function.zip" # Update with your ZIP file path
-  handler       = "index.handler"
+  filename      = "lambda_function.zip" # Ensure the ZIP file is in the same directory
+  handler       = "lambda_function.lambda_handler"
   runtime       = "python3.8"
   role          = aws_iam_role.lambda_exec.arn
   vpc_config {
@@ -127,7 +131,7 @@ resource "aws_cloudfront_distribution" "my_distribution" {
   }
 
   origin {
-    domain_name = aws_api_gateway_rest_api.my_api.execution_arn
+    domain_name = "${aws_api_gateway_rest_api.my_api.id}.execute-api.${var.aws_region}.amazonaws.com"
     origin_id   = "APIGateway-myAPI"
   }
 
