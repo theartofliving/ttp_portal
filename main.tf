@@ -6,10 +6,9 @@ variable "aws_region" {
   default = "ap-south-1"
 }
 
-
-# S3 Bucket
-resource "aws_s3_bucket" "my_bucket" {
-  bucket = "my-static-files-bucket"
+# Reference Existing S3 Bucket
+data "aws_s3_bucket" "my_bucket" {
+  bucket = "ttp-portal-bucket"
 }
 
 # IAM Role for Lambda
@@ -31,7 +30,7 @@ resource "aws_iam_role" "lambda_exec" {
 
 # IAM Policy for Lambda to access S3 and OpenSearch
 resource "aws_iam_policy" "lambda_policy" {
-  name        = "lambda_policy"
+  name        = "lambda_policy_opensearch_s3"
   description = "Policy for Lambda to access S3 and OpenSearch"
   policy      = jsonencode({
     Version = "2012-10-17"
@@ -44,8 +43,8 @@ resource "aws_iam_policy" "lambda_policy" {
         ]
         Effect   = "Allow"
         Resource = [
-          aws_s3_bucket.my_bucket.arn,
-          "${aws_s3_bucket.my_bucket.arn}/*"
+          data.aws_s3_bucket.my_bucket.arn,
+          "${data.aws_s3_bucket.my_bucket.arn}/*"
         ]
       },
       {
@@ -54,6 +53,31 @@ resource "aws_iam_policy" "lambda_policy" {
           "es:ESHttpPut",
           "es:ESHttpGet"
         ]
+        Effect   = "Allow"
+        Resource = "*"
+      },
+      {
+        Action = "ec2:CreateNetworkInterface"
+        Effect   = "Allow"
+        Resource = "*"
+      },
+      {
+        Action = "ec2:AttachNetworkInterface"
+        Effect   = "Allow"
+        Resource = "*"
+      },
+      {
+        Action = "ec2:DeleteNetworkInterface"
+        Effect   = "Allow"
+        Resource = "*"
+      },
+      {
+        Action = "ec2:DescribeNetworkInterfaces"
+        Effect   = "Allow"
+        Resource = "*"
+      },
+      {
+        Action = "ec2:DetachNetworkInterface"
         Effect   = "Allow"
         Resource = "*"
       }
@@ -88,7 +112,7 @@ resource "aws_lambda_function" "my_lambda" {
 
 # S3 Bucket Notification for Lambda
 resource "aws_s3_bucket_notification" "bucket_notification" {
-  bucket = aws_s3_bucket.my_bucket.bucket
+  bucket = data.aws_s3_bucket.my_bucket.bucket
   lambda_function {
     lambda_function_arn = aws_lambda_function.my_lambda.arn
     events              = ["s3:ObjectCreated:*"]
@@ -127,7 +151,7 @@ resource "aws_cloudfront_distribution" "my_distribution" {
   enabled = true
 
   origin {
-    domain_name = aws_s3_bucket.my_bucket.bucket_regional_domain_name
+    domain_name = data.aws_s3_bucket.my_bucket.bucket_regional_domain_name
     origin_id   = "S3-myBucket"
   }
 
