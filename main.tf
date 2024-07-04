@@ -111,8 +111,17 @@ resource "aws_lambda_function" "my_lambda" {
 }
 
 # S3 Bucket Notification for Lambda
+resource "aws_lambda_permission" "allow_s3" {
+  statement_id  = "AllowExecutionFromS3Bucket"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.my_lambda.function_name
+  principal     = "s3.amazonaws.com"
+  source_arn    = data.aws_s3_bucket.my_bucket.arn
+}
+
 resource "aws_s3_bucket_notification" "bucket_notification" {
   bucket = data.aws_s3_bucket.my_bucket.bucket
+
   lambda_function {
     lambda_function_arn = aws_lambda_function.my_lambda.arn
     events              = ["s3:ObjectCreated:*"]
@@ -151,7 +160,7 @@ resource "aws_cloudfront_distribution" "my_distribution" {
   enabled = true
 
   origin {
-    domain_name = data.aws_s3_bucket.my_bucket.bucket_regional_domain_name
+    domain_name = "ttp-portal-bucket.s3-website.ap-south-1.amazonaws.com"
     origin_id   = "S3-myBucket"
   }
 
