@@ -1,4 +1,4 @@
-name: Deploy to AWS
+name: Deploy to S3 and OpenSearch
 
 on:
   push:
@@ -10,39 +10,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
 
-    - name: Install AWS CLI
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y awscli
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
 
-    - name: Configure AWS credentials
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      run: |
-        aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
-        aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
-        aws configure set region ap-south-1
+      - name: Sync files to S3
+        run: |
+          aws s3 sync . s3://ttp-portal-bucket --exclude ".git/*" --exclude ".github/*"
 
-    - name: Upload files to S3
-      run: |
-        aws s3 sync . s3://ttp-portal-bucket --exclude ".git/*" --exclude "node_modules/*" --exclude ".github/*"
-
-    - name: Set up Terraform
-      uses: hashicorp/setup-terraform@v1
-      with:
-        terraform_version: 1.0.0
-
-    - name: Terraform Init
-      run: terraform init
-
-    - name: Terraform Apply
-      run: terraform apply -auto-approve
+      - name: Upload files to OpenSearch
+        run: |
+          for file in $(find . -type f -name '*.json'); do
+            filename=$(basename $file)
+            curl -X POST "https://vpc-ttpportal-lrysnolxf3dtvnwgchv3xln2py.ap-south-1.es.amazonaws.com/my-index/_doc/$filename" -H "Content-Type: application/json" -d @$file
+          done
