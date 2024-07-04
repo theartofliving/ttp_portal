@@ -42,4 +42,7 @@ jobs:
         terraform_version: 1.0.0
 
     - name: Terraform Init
-     
+      run: terraform init
+
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
